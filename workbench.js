@@ -109,6 +109,7 @@
       var actions = el('div', 'wb-actions');
       var btn = el('button', 'wb-btn', '已处理');
       btn.type = 'button';
+      btn.setAttribute('aria-label', '标记为已处理');
       btn.addEventListener('click', function () { markDone(d.id, btn); });
       actions.appendChild(btn);
       card.appendChild(actions);
@@ -132,7 +133,7 @@
     var bits = [];
     if (a.task) bits.push('任务：' + a.task);
     if (a.at) bits.push('更新：' + shortAgo(a.at));
-    if (bits.length) body.appendChild(el('div', 'wb-agent-meta', bits.join('　')));
+    if (bits.length) body.appendChild(el('div', 'wb-agent-meta', bits.join(' · ')));
     row.appendChild(body);
     return row;
   }
@@ -199,7 +200,7 @@
       if (l.owner) bits.push('在处理：' + l.owner);
       if (l.evidence) bits.push('证据：' + l.evidence);
       if (l.checkedAt) bits.push('核实：' + fmtTime(l.checkedAt));
-      if (bits.length) body.appendChild(el('div', 'wb-line-meta', bits.join('　')));
+      if (bits.length) body.appendChild(el('div', 'wb-line-meta', bits.join(' · ')));
       row.appendChild(body);
       box.appendChild(row);
     });
@@ -224,6 +225,7 @@
     defs.forEach(function (d) {
       var btn = el('button', 'wb-filter' + (taskFilter === d[0] ? ' active' : ''), d[1] + ' ' + (counts[d[0]] || 0));
       btn.type = 'button';
+      btn.setAttribute('aria-pressed', taskFilter === d[0] ? 'true' : 'false');
       btn.addEventListener('click', function () { taskFilter = d[0]; renderTasks(); });
       box.appendChild(btn);
     });
@@ -311,7 +313,20 @@
     }
   }
 
+  function showLoading() {
+    ['wb-decisions', 'wb-agents', 'wb-tasks'].forEach(function (id) {
+      var box = $(id);
+      if (!box) return;
+      box.textContent = '';
+      var wrap = el('div', 'wb-loading');
+      wrap.appendChild(el('div', 'wb-skeleton'));
+      wrap.appendChild(el('div', 'wb-skeleton'));
+      box.appendChild(wrap);
+    });
+  }
+
   async function loadFromKv() {
+    showLoading();
     try {
       var res = await fetch('/kv');
       var data = await res.json();

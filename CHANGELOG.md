@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0
+
+- 统一视觉系统：设计变量（间距/圆角/字号/状态色）、卡片与按钮基座、状态药丸
+- 统一交互：hover / active / focus-visible、动效降级（prefers-reduced-motion）
+- 加载骨架、空态样式、筛选按钮 aria-pressed、滚动条与暗色模式适配
+- 主视图改为粘性头部，面板与主视图密度分别调优
+
 ## 1.3.2
 
 - 过滤 JSON 形态的消息内容，避免把结构化 payload 当成进度文字展示
