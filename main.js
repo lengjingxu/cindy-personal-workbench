@@ -1,6 +1,6 @@
 
 const CHANNEL_NAME = 'personal-workbench';
-const EMPTY = { updatedAt: null, lines: [], decisions: [], agents: { updatedAt: null, list: [] }, tasks: { updatedAt: null, list: [] } };
+const EMPTY = { updatedAt: null, lines: [], decisions: [], agents: { updatedAt: null, list: [] }, tasks: { updatedAt: null, list: [] }, todos: { updatedAt: null, list: [] } };
 
 const ch = (function () {
   try { return new BroadcastChannel(CHANNEL_NAME); } catch (e) { return null; }
@@ -40,6 +40,7 @@ function currentState(all) {
   if (!wb || typeof wb !== 'object') return base;
   const agents = wb.agents && typeof wb.agents === 'object' ? wb.agents : base.agents;
   const tasks = wb.tasks && typeof wb.tasks === 'object' ? wb.tasks : base.tasks;
+  const todos = wb.todos && typeof wb.todos === 'object' ? wb.todos : base.todos;
   return {
     updatedAt: wb.updatedAt || null,
     lines: Array.isArray(wb.lines) ? wb.lines : [],
@@ -51,6 +52,10 @@ function currentState(all) {
     tasks: {
       updatedAt: tasks.updatedAt || null,
       list: Array.isArray(tasks.list) ? tasks.list : []
+    },
+    todos: {
+      updatedAt: (todos && todos.updatedAt) || null,
+      list: (todos && Array.isArray(todos.list)) ? todos.list : []
     }
   };
 }
@@ -412,6 +417,16 @@ async function applyTaskScan(scanned) {
   return { changed: list.length };
 }
 
+async function applyTodoScan(scanned) {
+  const list = Array.isArray(scanned.todos) ? scanned.todos : [];
+  const all = await readAll();
+  const state = currentState(all);
+  state.todos = { updatedAt: new Date().toISOString(), list: list };
+  await writeAll(Object.assign({}, all, { workbench: state }));
+  broadcast({ from: 'workbench-brain', type: 'state', state: state });
+  return { count: list.length };
+}
+
 async function pollAgents() {
   if (scanInFlight) return;
   scanInFlight = true;
@@ -421,6 +436,7 @@ async function pollAgents() {
       scanFailures = 0;
       await applyAgentScan(res.result);
       await applyTaskScan(res.result);
+      await applyTodoScan(res.result);
     } else {
       scanFailures++;
     }

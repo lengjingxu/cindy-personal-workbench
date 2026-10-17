@@ -67,6 +67,49 @@ function excerpt(text, max) {
   return (stop > max * 0.5 ? cut.slice(0, stop + 1) : cut + '…');
 }
 
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; }
+}
+
+function collectTodos(names) {
+  const out = [];
+  const ownersDir = path.join(CINDY_DIR, 'owners');
+  let owners = [];
+  try { owners = fs.readdirSync(ownersDir); } catch (e) { return out; }
+  for (const owner of owners) {
+    const botsDir = path.join(ownersDir, owner, 'bots');
+    let botDirs = [];
+    try { botDirs = fs.readdirSync(botsDir); } catch (e) { continue; }
+    for (const botId of botDirs) {
+      const dir = path.join(botsDir, botId);
+      const td = readJson(path.join(dir, 'todos.v1.json'));
+      if (!td || !Array.isArray(td.items)) continue;
+      for (const it of td.items) {
+        if (!it || it.status === 'done') continue;
+        const next = (it.next && typeof it.next === 'object') ? it.next : {};
+        out.push({
+          botId: botId,
+          botName: names[botId] || botId,
+          id: String(it.id || ''),
+          key: String(it.key || ''),
+          title: String(it.title || ''),
+          origin: String(it.origin || ''),
+          status: String(it.status || ''),
+          kind: String(next.kind || ''),
+          nextLabel: String(next.label || ''),
+          instruction: String(next.instruction || '').slice(0, 220),
+          progress: String(it.progress || '').slice(0, 260),
+          sources: (Array.isArray(it.sources) ? it.sources : []).map(function (x) { return String((x && x.label) || ''); }).filter(Boolean).slice(0, 3),
+          revision: Number(it.revision) || 0,
+          updatedAt: String(it.updatedAt || '')
+        });
+      }
+    }
+  }
+  out.sort(function (a, b) { return String(b.updatedAt).localeCompare(String(a.updatedAt)); });
+  return out.slice(0, 100);
+}
+
 function scan() {
   const file = findDb();
   if (!file) return { ok: false, reason: 'NO_DB' };
@@ -159,7 +202,7 @@ function scan() {
 
     for (const botId of Object.keys(seen)) bots.push(seen[botId]);
 
-    return { ok: true, scannedAt: Date.now(), bots: bots, tasks: tasks };
+    return { ok: true, scannedAt: Date.now(), bots: bots, tasks: tasks, todos: collectTodos(names) };
   } catch (e) {
     return { ok: false, reason: 'QUERY_FAILED', message: String(e && e.message) };
   } finally {

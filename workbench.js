@@ -64,6 +64,64 @@
     return 'stale';
   }
 
+  var TODO_KINDS = { decide: '需要你决定', advance: '可以推进', view: '待了解', '': '其他未完成' };
+
+  function todoRow(t) {
+    var card = el('div', 'wb-todo' + (t.kind === 'decide' ? ' decide' : ''));
+    var head = el('div', 'wb-todo-head');
+    head.appendChild(el('span', 'wb-todo-title', t.title || '未命名待办'));
+    if (t.kind) head.appendChild(el('span', 'wb-kind ' + t.kind, TODO_KINDS[t.kind] || t.kind));
+    card.appendChild(head);
+
+    var meta = el('div', 'wb-todo-meta');
+    var bits = [];
+    if (t.botName) bits.push(t.botName);
+    if (t.updatedAt) bits.push(shortAgo(t.updatedAt));
+    if (t.origin === 'discovered') bits.push('AI 发现');
+    if (bits.length) meta.appendChild(el('span', null, bits.join(' · ')));
+    if (t.sources && t.sources.length) meta.appendChild(el('span', 'wb-todo-src', t.sources[0]));
+    card.appendChild(meta);
+
+    if (t.progress) card.appendChild(el('div', 'wb-todo-progress', t.progress));
+    if (t.nextLabel) card.appendChild(el('div', 'wb-todo-next', '下一步：' + t.nextLabel));
+    return card;
+  }
+
+  function renderTodos() {
+    var box = $('wb-todos');
+    if (!box) return;
+    var count = $('wb-todocount');
+    var list = (state.todos && state.todos.list) || [];
+    box.textContent = '';
+
+    if (!list.length) {
+      if (count) count.textContent = '';
+      box.appendChild(el('div', 'wb-empty', '没有未完成的待办。'));
+      return;
+    }
+
+    if (!isMain) {
+      var decide = list.filter(function (t) { return t.kind === 'decide'; }).slice(0, 3);
+      if (count) count.textContent = decide.length ? '（' + decide.length + '）' : '';
+      if (!decide.length) {
+        box.appendChild(el('div', 'wb-empty', '现在没有需要你决定的待办。'));
+        return;
+      }
+      decide.forEach(function (t) { box.appendChild(todoRow(t)); });
+      var rest = list.length - decide.length;
+      if (rest > 0) box.appendChild(el('div', 'wb-hint', '另有 ' + rest + ' 条待办在完整工作台里。'));
+      return;
+    }
+
+    if (count) count.textContent = '（' + list.length + '）';
+    ['decide', 'advance', 'view', ''].forEach(function (kind) {
+      var group = list.filter(function (t) { return (t.kind || '') === kind; });
+      if (!group.length) return;
+      box.appendChild(el('div', 'wb-todo-group', TODO_KINDS[kind] + ' · ' + group.length));
+      group.slice(0, 20).forEach(function (t) { box.appendChild(todoRow(t)); });
+    });
+  }
+
   function renderStats() {
     var box = $('wb-stats');
     if (!box) return;
@@ -291,6 +349,7 @@
     safe(function () { if ($('wb-sub')) $('wb-sub').textContent = agoText(stamp); });
     safe(renderStats);
     safe(renderDecisions);
+    safe(renderTodos);
     safe(renderAgents);
     safe(renderLines);
     safe(renderTasks);
@@ -303,7 +362,8 @@
       lines: next.lines || [],
       decisions: next.decisions || [],
       agents: next.agents || { updatedAt: null, list: [] },
-      tasks: next.tasks || { updatedAt: null, list: [] }
+      tasks: next.tasks || { updatedAt: null, list: [] },
+      todos: next.todos || { updatedAt: null, list: [] }
     };
     renderAll();
   }
