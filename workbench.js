@@ -38,6 +38,12 @@
     return Math.round(h / 24) + ' 天前更新';
   }
 
+  function toIso(v) {
+    if (!v) return '';
+    var d = typeof v === 'number' ? new Date(v) : new Date(String(v));
+    return isNaN(d.getTime()) ? '' : d.toISOString();
+  }
+
   function shortAgo(iso) {
     if (!iso) return '';
     var diff = Date.now() - new Date(iso).getTime();
@@ -266,7 +272,7 @@
       var meta = el('div', 'wb-task-meta');
       if (t.project) meta.appendChild(el('span', 'wb-tag', t.project));
       meta.appendChild(el('span', 'wb-tag', SOURCE_LABELS[t.source] || t.source || '其它'));
-      meta.appendChild(el('span', null, shortAgo(new Date(Number(t.updatedAt)).toISOString())));
+      meta.appendChild(el('span', null, shortAgo(toIso(t.updatedAt))));
       if (t.model) meta.appendChild(el('span', null, t.model));
       if (t.messageCount) meta.appendChild(el('span', null, t.messageCount + ' 条消息'));
       if (st === 'running') meta.appendChild(el('span', null, '正在跑'));
@@ -276,13 +282,18 @@
     });
   }
 
+  function safe(fn) {
+    try { fn(); } catch (e) { /* 单个区块失败不影响整页 */ }
+  }
+
   function renderAll() {
-    if ($('wb-sub')) $('wb-sub').textContent = agoText(state.tasks && state.tasks.updatedAt ? new Date(Number(state.tasks.updatedAt)).toISOString() : state.updatedAt);
-    renderStats();
-    renderDecisions();
-    renderAgents();
-    renderLines();
-    renderTasks();
+    var stamp = (state.tasks && state.tasks.updatedAt) || state.updatedAt || null;
+    safe(function () { if ($('wb-sub')) $('wb-sub').textContent = agoText(stamp); });
+    safe(renderStats);
+    safe(renderDecisions);
+    safe(renderAgents);
+    safe(renderLines);
+    safe(renderTasks);
   }
 
   function applyState(next) {
