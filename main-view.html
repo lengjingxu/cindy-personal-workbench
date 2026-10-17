@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>工作台</title>
+  <link rel="stylesheet" href="workbench.css" />
+</head>
+<body class="layout-main">
+  <main class="wb wb-main">
+    <header class="wb-head wb-head-wide">
+      <div class="wb-head-main">
+        <h1>工作台</h1>
+        <p class="wb-sub" id="wb-sub">加载中</p>
+      </div>
+      <div class="wb-stats" id="wb-stats"></div>
+      <button class="wb-btn" id="wb-refresh" type="button">刷新</button>
+    </header>
+
+    <div class="wb-grid">
+      <div class="wb-col">
+        <section class="wb-section">
+          <h2>待你拍板 <span class="wb-count" id="wb-dcount"></span></h2>
+          <div id="wb-decisions" class="wb-decisions"></div>
+        </section>
+
+        <section class="wb-section">
+          <h2>业务线状态 <span class="wb-count" id="wb-lcount"></span></h2>
+          <div id="wb-lines" class="wb-lines"></div>
+        </section>
+      </div>
+
+      <div class="wb-col">
+        <section class="wb-section">
+          <h2>任务 <span class="wb-count" id="wb-tcount"></span></h2>
+          <div class="wb-filters" id="wb-tfilters"></div>
+          <div id="wb-tasks" class="wb-tasks"></div>
+        </section>
+      </div>
+
+      <div class="wb-col">
+        <section class="wb-section">
+          <h2>伙伴动态 <span class="wb-count" id="wb-acount"></span></h2>
+          <div id="wb-agents" class="wb-agents"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script src="workbench.js"></script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 3,
+  "minCindyVersion": "0.1.110",
+  "id": "personal-workbench",
+  "name": "工作台",
+  "description": "个人工作台：整页版有工作台首页（待拍板、任务、伙伴、业务线），左侧面板是精简版。伙伴与任务状态由随包 Node 进程直接读本机会话数据，实时更新。",
+  "whenToUse": "需要查看个人工作台、需要知道哪些事等用户拍板、查看业务线当前状态（睿钛公司业务、Cindy 技术交付）、提交或清理待决策事项时使用。用户说“打开工作台”“今天有什么要我决定的”“现在哪条线不正常”时使用。",
+  "version": "1.3.2",
+  "kind": "chip",
+  "entry": "main.js",
+  "icon": "assets/icon.png",
+  "command": "工作台",
+  "mainView": {
+    "title": "工作台",
+    "icon": "chart-column",
+    "html": "main-view.html"
+  },
+  "panel": {
+    "title": "工作台",
+    "html": "workbench.html",
+    "position": "left",
+    "minWidth": 300,
+    "defaultFraction": 0.28
+  },
+  "badge": true,
+  "notify": true,
+  "tools": [
+    {
+      "name": "workbench_publish",
+      "description": "把一次巡检的结果整体写进个人工作台并更新首页。定时巡检任务每次调用一次，提交全部业务线状态和需要用户拍板的事。整体覆盖 lines，decisions 按 title 合并去重。返回本次新产生的提醒。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "description": "业务线状态列表。没接入或无法确认的也要提交，不要省略，否则页面会一直显示旧状态。",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "业务线名称，例如 睿钛官网、快消方案、Cindy 客户端、定时任务"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ok",
+                    "alert",
+                    "pending",
+                    "unknown",
+                    "unconnected"
+                  ],
+                  "description": "ok=正常 alert=异常 pending=待处理 unknown=无法确认 unconnected=未接入"
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "一句话说明现在什么情况，只写核实过的事实，不写推测"
+                },
+                "owner": {
+                  "type": "string",
+                  "description": "现在谁在处理，人或伙伴名；没有就留空"
+                },
+                "evidence": {
+                  "type": "string",
+                  "description": "证据：任务名、文件路径、PR 号或链接"
+                },
+                "checkedAt": {
+                  "type": "string",
+                  "description": "最近核实时间，ISO 8601"
+                }
+              },
+              "required": [
+                "name",
+                "status",
+                "summary"
+              ]
+            }
+          },
+          "decisions": {
+            "type": "array",
+            "description": "需要用户本人拍板的事。只有涉及费用、对外承诺、方向取舍或风险时才提交，Agent 自己能处理的不要放这里。",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "一句话说明要决定什么"
+                },
+                "why": {
+                  "type": "string",
+                  "description": "为什么需要他决定：涉及的钱、承诺、方向或风险"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "可选方案 2-4 个，带上代价"
+                },
+                "deadline": {
+                  "type": "string",
+                  "description": "截止时间，没有就留空"
+                },
+                "source": {
+                  "type": "string",
+                  "description": "来源：任务名或文件路径"
+                }
+              },
+              "required": [
+                "title",
+                "why"
+              ]
+            }
+          }
+        },
+        "required": [
+          "lines"
+        ]
+      }
+    },
+    {
+      "name": "workbench_get_state",
+      "description": "读取个人工作台当前状态，包含业务线列表和未处理的待决策事项。巡检开始前先调用，避免重复提交已经存在的待决策。",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "workbench_mark_done",
+      "description": "把某条待决策事项标记为已处理（用户已经拍板或事情已经不需要决定），从首页移除。参数传 workbench_get_state 返回的 id。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "待决策事项的 id"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "workbench_publish_agents",
+      "description": "把伙伴的最新进度写进个人工作台。按 botId 合并：只覆盖本次带来的字段，没提交的伙伴保留原状态。用于「伙伴进度」巡检，每次把有新动作的伙伴提交一次即可。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agents": {
+            "type": "array",
+            "description": "有新动作的伙伴列表。没有新动作的伙伴不要提交。",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "伙伴名，例如 睿钛Javis"
+                },
+                "botId": {
+                  "type": "string",
+                  "description": "伙伴 id，来自 list_agents"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "working",
+                    "finished",
+                    "idle",
+                    "stuck",
+                    "unknown"
+                  ],
+                  "description": "working=正在做 finished=刚交付 idle=空闲 stuck=卡住等外部 unknown=无法确认"
+                },
+                "progress": {
+                  "type": "string",
+                  "description": "一句话进度，不超过 60 字：在做什么、做到哪、有没有卡住。只写核实到的"
+                },
+                "task": {
+                  "type": "string",
+                  "description": "正在处理的任务名"
+                },
+                "sessions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "该伙伴最近活跃的任务 id，用于把实时事件对到人"
+                },
+                "device": {
+                  "type": "string",
+                  "description": "伙伴所在设备，本机留空"
+                },
+                "at": {
+                  "type": "string",
+                  "description": "这次进度对应的时间，ISO 8601"
+                }
+              },
+              "required": [
+                "name",
+                "progress"
+              ]
+            }
+          }
+        },
+        "required": [
+          "agents"
+        ]
+      }
+    }
+  ],
+  "launch": "resident",
+  "subscribe": {
+    "topics": [
+      "turn",
+      "session"
+    ]
+  },
+  "node": {
+    "entry": "node/worker.cjs",
+    "protocol": "json-rpc-stdio",
+    "lifecycle": "resident"
+  },
+  "routineEvents": {
+    "events": [
+      {
+        "type": "agent.activity",
+        "name": "伙伴有新动作",
+        "fields": [
+          "botId",
+          "phase",
+          "task"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>工作台</title>
+  <link rel="stylesheet" href="workbench.css" />
+</head>
+<body class="layout-panel">
+  <main class="wb">
+    <header class="wb-head">
+      <div class="wb-head-main">
+        <h1>工作台</h1>
+        <p class="wb-sub" id="wb-sub">加载中</p>
+      </div>
+      <button class="wb-btn" id="wb-refresh" type="button">刷新</button>
+    </header>
+
+    <section class="wb-section">
+      <h2>待你拍板 <span class="wb-count" id="wb-dcount"></span></h2>
+      <div id="wb-decisions" class="wb-decisions"></div>
+    </section>
+
+    <section class="wb-section">
+      <h2>伙伴动态 <span class="wb-count" id="wb-acount"></span></h2>
+      <div id="wb-agents" class="wb-agents"></div>
+      <p class="wb-hint">完整工作台（含任务板块）在侧边栏「工作台」里打开。</p>
+    </section>
+  </main>
+  <script src="workbench.js"></script>
+</body>
+</html>
